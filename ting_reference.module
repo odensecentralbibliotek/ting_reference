@@ -136,35 +136,63 @@ function ting_reference_field_update($entity_type, $entity, $field, $instance, $
   $keep = array();
   $clear_cache = FALSE;
 
-  // Loop through items, create new and mark existing to be kept.
-  foreach ($items as $item) {
-    if (!empty($item['tid'])) {
-      $found = FALSE;
-      foreach ($relations as $relation) {
-        if ($relation->endpoints['und'][1]['entity_id'] == $item['tid']) {
-          $keep[$relation->rid] = $relation->rid;
-          $found = TRUE;
-          break;
+  foreach ($items as $index => $item) {
+      if (!empty($item['tid'])) {
+        $BuffIndex = 0;
+        foreach ($relations as $relind => $relation) {
+            if ($BuffIndex == $index && $relations[$relind]->endpoints['und'][1]['entity_id'] != $items[$index]['tid']) {
+                $sortchanged = true;
+                break;
+            }
+            $BuffIndex++;
         }
       }
-      if (!$found) {
-        ting_reference_create_relation($entity_type, $entity_id, $item['tid']);
-        $clear_cache = TRUE;
+  }
+  if($sortchanged == true)
+  {
+      //Sorting of reference has been changed. Drop Current entities..and recreate.
+      foreach ($relations as $rid => $relation) {
+          relation_delete($rid);
+      }
+      foreach($items as $index => $item)
+      {
+           ting_reference_create_relation($entity_type, $entity_id, $item['tid']);
+           $clear_cache = TRUE;
+      }
+     $relations = ting_reference_get_relations($entity_type, $entity); 
+  }
+  else
+  {
+    // Loop through items, create new and mark existing to be kept.
+    foreach ($items as $index => $item) {
+      if (!empty($item['tid'])) {
+        $found = FALSE;
+        foreach ($relations as $relind => $relation) {
+          if ($relations[$relind]->endpoints['und'][1]['entity_id'] == $items[$index]['tid']) {
+            $keep[$relation->rid] = $relation->rid;
+            $found = TRUE;
+
+            break;
+          }
+        }
+        if (!$found) {
+          ting_reference_create_relation($entity_type, $entity_id, $item['tid']);
+          $clear_cache = TRUE;
+        }
+      }
+    }
+      // Delete the relations that aren't present anymore.
+    foreach ($relations as $rid => $relation) {
+      if (!in_array($rid, $keep)) {
+        relation_delete($rid);
       }
     }
   }
-
   // Clear cache if needed.
   if ($clear_cache) {
     field_cache_clear('field:' . $entity_type . ':' . $entity_id);
   }
 
-  // Delete the relations that aren't present anymore.
-  foreach ($relations as $rid => $relation) {
-    if (!in_array($rid, $keep)) {
-      relation_delete($rid);
-    }
-  }
 }
 
 /**
