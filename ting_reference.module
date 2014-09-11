@@ -179,37 +179,75 @@ function ting_reference_field_update($entity_type, $entity, $field, $instance, $
   $relations = ting_reference_get_relations($entity_type, $entity);
   $keep = array();
   $clear_cache = FALSE;
-  // Loop through items, create new and mark existing to be kept.
+  usort($items,ting_sortrelationsbyweigth);
+  
+  //Loop throu items and relations and find out if layout changed
+  $SortChanged = false;
   foreach ($items as $item) {
-    if (!empty($item['object'])) {
-      $found = FALSE;
-      foreach ($relations as $relation) {
-        if ($relation->endpoints['und'][1]['entity_id'] == $item['object']->tid) {
-          $keep[$relation->rid] = $relation->rid;
-          $found = TRUE;
+       if (!empty($item['object'])) {
+           foreach ($relations as $relation) {
+                if ($relation->endpoints['und'][1]['entity_id'] != $item['object']->tid) {
+                    $SortChanged = true;
+                    break;
+                }
+           }
+      }
+      if($SortChanged == true)
+      {
           break;
-        }
       }
-      if (!$found) {
-        ting_reference_create_relation($entity_type, $entity_id, $item['object']->tid);
-        $clear_cache = TRUE;
-      }
-    }
   }
+  if($SortChanged == true)
+  {
+      foreach ($relations as $rid => $relation) {
+          if (!in_array($rid, $keep)) {
+            relation_delete($rid);
+          }
+        }
+      foreach ($items as $item) {
+          ting_reference_create_relation($entity_type, $entity_id, $item['object']->tid);
+      }
+  }
+  else
+  {
+      // Loop through items, create new and mark existing to be kept.
+        foreach ($items as $item) {
+          if (!empty($item['object'])) {
+            $found = FALSE;
+            foreach ($relations as $relation) {
+              if ($relation->endpoints['und'][1]['entity_id'] == $item['object']->tid) {
+                $keep[$relation->rid] = $relation->rid;
+                $found = TRUE;
+                break;
+              }
+            }
+            if (!$found) {
+              ting_reference_create_relation($entity_type, $entity_id, $item['object']->tid);
+              $clear_cache = TRUE;
+            }
+          }
+        }
+        // Delete the relations that aren't present anymore.
+        foreach ($relations as $rid => $relation) {
+          if (!in_array($rid, $keep)) {
+            relation_delete($rid);
+          }
+        }
+  }
+  
 
   // Clear cache if needed.
   if ($clear_cache) {
     field_cache_clear('field:' . $entity_type . ':' . $entity_id);
   }
-
-  // Delete the relations that aren't present anymore.
-  foreach ($relations as $rid => $relation) {
-    if (!in_array($rid, $keep)) {
-      relation_delete($rid);
-    }
-  }
 }
-
+function ting_sortrelationsbyweigth($a, $b)
+{
+    if ($a["weight"] == $b["weight"]) {
+        return 0;
+    }
+    return ($a["weight"] < $b["weight"]) ? -1 : 1;
+}
 /**
  * Implements hook_field_delete().
  */
@@ -411,7 +449,7 @@ function ting_reference_object_id_validate(&$element, &$form_state) {
   // If the colon was URL-encoded, decode it - and trim whitespace from
   // both ends of the input string.
   $identifier = trim(str_replace('%3A', ':', $element['#value']['identifier']));
-
+  $_weight = isset($element['#value']['_weight']) ? $element['#value']['_weight'] : 0;
   // Don't bother validating empty fields.
   if (empty($identifier)) { return; }
 
@@ -424,7 +462,7 @@ function ting_reference_object_id_validate(&$element, &$form_state) {
 
   if ($object) {
     // Set the form values needed.
-    form_set_value($element, array('value' => '', 'object' => $object, 'identifier' => $identifier), $form_state);
+    form_set_value($element, array('value' => '', 'object' => $object, 'identifier' => $identifier,'weight' => $_weight), $form_state);
   }
   else {
     form_set_error(implode('][', $p), t('Object “%identifier” could not be found.', array('%identifier' => $identifier)));
