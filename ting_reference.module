@@ -179,7 +179,7 @@ function ting_reference_field_update($entity_type, $entity, $field, $instance, $
   $relations = ting_reference_get_relations($entity_type, $entity);
   $keep = array();
   $clear_cache = FALSE;
-  usort($items,ting_sortrelationsbyweigth);
+  usort($items,'ting_sortrelationsbyweigth');
   
   //Loop throu items and relations and find out if layout changed
   $SortChanged = false;
