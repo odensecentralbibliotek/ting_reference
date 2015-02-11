@@ -179,61 +179,66 @@ function ting_reference_field_update($entity_type, $entity, $field, $instance, $
   $relations = ting_reference_get_relations($entity_type, $entity);
   $keep = array();
   $clear_cache = FALSE;
-  usort($items,'ting_sortrelationsbyweigth');
+  if(sizeof($items) != 0 && isset($items[0]["weight"]))
+  {
+      //we are adding via node_save.
+        usort($items,'ting_sortrelationsbyweigth');
   
-  //Loop throu items and relations and find out if layout changed
-  $SortChanged = false;
-  foreach ($items as $item) {
-       if (!empty($item['object'])) {
-           foreach ($relations as $relation) {
-                if ($relation->endpoints['und'][1]['entity_id'] != $item['object']->tid) {
-                    $SortChanged = true;
-                    break;
-                }
-           }
-      }
-      if($SortChanged == true)
-      {
-          break;
-      }
-  }
-  if($SortChanged == true)
-  {
-      foreach ($relations as $rid => $relation) {
-          if (!in_array($rid, $keep)) {
-            relation_delete($rid);
-          }
+    //Loop throu items and relations and find out if layout changed
+    $SortChanged = false;
+    foreach ($items as $item) {
+         if (!empty($item['object'])) {
+             foreach ($relations as $relation) {
+                  if ($relation->endpoints['und'][1]['entity_id'] != $item['object']->tid) {
+                      $SortChanged = true;
+                      break;
+                  }
+             }
         }
-      foreach ($items as $item) {
-          ting_reference_create_relation($entity_type, $entity_id, $item['object']->tid);
-      }
-  }
-  else
-  {
-      // Loop through items, create new and mark existing to be kept.
+        if($SortChanged == true)
+        {
+            break;
+        }
+    }
+    if($SortChanged == true)
+    {
+        foreach ($relations as $rid => $relation) {
+            if (!in_array($rid, $keep)) {
+              relation_delete($rid);
+            }
+          }
         foreach ($items as $item) {
-          if (!empty($item['object'])) {
-            $found = FALSE;
-            foreach ($relations as $relation) {
-              if ($relation->endpoints['und'][1]['entity_id'] == $item['object']->tid) {
-                $keep[$relation->rid] = $relation->rid;
-                $found = TRUE;
-                break;
+            ting_reference_create_relation($entity_type, $entity_id, $item['object']->tid);
+        }
+    }
+    else
+    {
+        // Loop through items, create new and mark existing to be kept.
+          foreach ($items as $item) {
+            if (!empty($item['object'])) {
+              $found = FALSE;
+              foreach ($relations as $relation) {
+                if ($relation->endpoints['und'][1]['entity_id'] == $item['object']->tid) {
+                  $keep[$relation->rid] = $relation->rid;
+                  $found = TRUE;
+                  break;
+                }
+              }
+              if (!$found) {
+                ting_reference_create_relation($entity_type, $entity_id, $item['object']->tid);
+                $clear_cache = TRUE;
               }
             }
-            if (!$found) {
-              ting_reference_create_relation($entity_type, $entity_id, $item['object']->tid);
-              $clear_cache = TRUE;
+          }
+          // Delete the relations that aren't present anymore.
+          foreach ($relations as $rid => $relation) {
+            if (!in_array($rid, $keep)) {
+              relation_delete($rid);
             }
           }
-        }
-        // Delete the relations that aren't present anymore.
-        foreach ($relations as $rid => $relation) {
-          if (!in_array($rid, $keep)) {
-            relation_delete($rid);
-          }
-        }
+    }
   }
+
   
 
   // Clear cache if needed.
