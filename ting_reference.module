@@ -179,10 +179,11 @@ function ting_reference_field_update($entity_type, $entity, $field, $instance, $
   $relations = ting_reference_get_relations($entity_type, $entity);
   $keep = array();
   $clear_cache = FALSE;
+  //Check if there was any items in the form , if not we assume we delete all relations.
   if(sizeof($items) != 0 && isset($items[0]["weight"]))
   {
       //we are adding via node_save.
-        usort($items,'ting_sortrelationsbyweigth');
+      usort($items,'ting_sortrelationsbyweigth');
   
     //Loop throu items and relations and find out if layout changed
     $SortChanged = false;
@@ -238,9 +239,14 @@ function ting_reference_field_update($entity_type, $entity, $field, $instance, $
           }
     }
   }
-
-  
-
+  else
+  {
+      //Remove all relations!
+       foreach ($relations as $rid => $relation) {
+          relation_delete($rid);
+      }
+      
+  }
   // Clear cache if needed.
   if ($clear_cache) {
     field_cache_clear('field:' . $entity_type . ':' . $entity_id);
@@ -450,14 +456,14 @@ function ting_reference_object_id_process($element, $form_state, $complete_form)
  */
 function ting_reference_object_id_validate(&$element, &$form_state) {
   module_load_include('client.inc', 'ting');
-
+  
   // If the colon was URL-encoded, decode it - and trim whitespace from
   // both ends of the input string.
   $identifier = trim(str_replace('%3A', ':', $element['#value']['identifier']));
   $_weight = isset($element['#value']['_weight']) ? $element['#value']['_weight'] : 0;
   // Don't bother validating empty fields.
   if (empty($identifier)) { return; }
-
+  
   // Load the object to validate it exists.
   // Loading it should make it available for use with ting_get_object().
   $object = ting_object_load($identifier);
