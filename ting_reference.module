@@ -176,7 +176,8 @@ function ting_reference_field_insert($entity_type, $entity, $field, $instance, $
 function ting_reference_field_update($entity_type, $entity, $field, $instance, $langcode, &$items) {
   //Make sure the cron run wont bug out our ting relationships.
   $current_path = current_path();
-  if(strpos($_SERVER["SCRIPT_URL"], 'cron.php') !== FALSE || strpos($current_path, '/run-cron') !== FALSE)
+  if(strpos($_SERVER["SCRIPT_URL"], 'cron.php') !== FALSE || strpos($current_path, '/run-cron') !== FALSE ||
+          $current_path == 'ding_frontpage')
   {
       return;
   }
