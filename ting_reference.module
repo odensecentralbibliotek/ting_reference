@@ -247,7 +247,7 @@ function ting_reference_field_update($entity_type, $entity, $field, $instance, $
   }
   else
   {
-      
+      watchdog(WATCHDOG_INFO,"ting Ref- Url: " .$current_path . " Script:" . $_SERVER["SCRIPT_URL"] );
       //Remove all relations!
        foreach ($relations as $rid => $relation) {
           relation_delete($rid);
