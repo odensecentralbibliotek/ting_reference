@@ -174,10 +174,9 @@ function ting_reference_field_insert($entity_type, $entity, $field, $instance, $
  * Implements hook_field_update().
  */
 function ting_reference_field_update($entity_type, $entity, $field, $instance, $langcode, &$items) {
-  //Make sure the cron run wont bug out our ting relationships.
+  //Make sure we only update the reference fields from backend.
   $current_path = current_path();
-  if(strpos($_SERVER["SCRIPT_URL"], 'cron.php') !== FALSE || strpos($current_path, '/run-cron') !== FALSE ||
-          $current_path == 'ding_frontpage')
+  if(strpos($current_path, 'node/') === FALSE)
   {
       return;
   }
