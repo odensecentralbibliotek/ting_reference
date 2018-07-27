@@ -143,6 +143,7 @@ function ting_reference_field_load($entity_type, $entities, $field, $instances, 
         break;
     }
   }
+ 
 }
 
 /**
@@ -178,6 +179,7 @@ function ting_reference_field_update($entity_type, $entity, $field, $instance, $
   $current_path = current_path();
   if(strpos($current_path, 'node/') === FALSE)
   {
+      $items = array();
       return;
   }
   $entity_info = entity_get_info($entity_type);
